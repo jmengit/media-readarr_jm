@@ -7,10 +7,10 @@ THRESHOLD=${BOOKMATCH_THRESHOLD:-40}
 # Set to 1 to force overwrite even if a value already exists
 OVERWRITE=${OVERWRITE_BOOKMATCH_THRESHOLD:-0}
 
-# Install sqlite3 if not available
+# Install sqlite3 if not available (Alpine Linux uses apk, not apt-get)
 if ! command -v sqlite3 &> /dev/null; then
     echo "**** Installing sqlite3... ****"
-    apt-get update -qq && apt-get install -qq -y sqlite3 > /dev/null 2>&1
+    apk add --no-cache sqlite > /dev/null 2>&1
     if ! command -v sqlite3 &> /dev/null; then
         echo "**** ERROR: Failed to install sqlite3. Cannot set BookMatchThreshold. ****"
         exit 1
