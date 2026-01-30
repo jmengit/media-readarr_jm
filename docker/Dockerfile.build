@@ -84,6 +84,10 @@ RUN echo -e "UpdateMethod=docker\nBranch=${BRANCH}\nPackageVersion=${VERSION}\nP
 # Copy s6-overlay service files
 COPY docker/root/ /
 
+# Set execute permissions on s6 service scripts
+RUN chmod +x /etc/s6-overlay/s6-rc.d/init-readarr-config/run && \
+    chmod +x /etc/s6-overlay/s6-rc.d/svc-readarr/run
+
 # Expose port and define volume
 EXPOSE 8787
 VOLUME /config
