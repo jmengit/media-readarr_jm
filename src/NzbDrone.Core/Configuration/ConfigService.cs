@@ -410,6 +410,12 @@ namespace NzbDrone.Core.Configuration
             set { SetValue("TrustCgnatIpAddresses", value); }
         }
 
+        public int BookMatchThreshold
+        {
+            get { return GetValueInt("BookMatchThreshold", 40); }
+            set { SetValue("BookMatchThreshold", value); }
+        }
+
         private string GetValue(string key)
         {
             return GetValue(key, string.Empty);

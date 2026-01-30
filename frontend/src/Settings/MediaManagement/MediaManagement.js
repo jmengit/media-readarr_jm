@@ -337,6 +337,27 @@ class MediaManagement extends Component {
                   <FormGroup
                     advancedSettings={advancedSettings}
                     isAdvanced={true}
+                    size={sizes.MEDIUM}
+                  >
+                    <FormLabel>
+                      Book Match Threshold
+                    </FormLabel>
+
+                    <FormInputGroup
+                      type={inputTypes.NUMBER}
+                      unit='%'
+                      name="bookMatchThreshold"
+                      helpText="Minimum match percentage required for book imports (lower values allow more lenient matching)"
+                      min={0}
+                      max={100}
+                      onChange={onInputChange}
+                      {...settings.bookMatchThreshold}
+                    />
+                  </FormGroup>
+
+                  <FormGroup
+                    advancedSettings={advancedSettings}
+                    isAdvanced={true}
                   >
                     <FormLabel>
                       {translate('ChangeFileDate')}
