@@ -1,0 +1,89 @@
+# syntax=docker/dockerfile:1
+
+#######################################
+# Stage 1: Build the application
+#######################################
+FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    nodejs \
+    npm \
+    yarn \
+    git \
+    curl
+
+WORKDIR /src
+
+# Copy source code
+COPY . .
+
+# Build frontend
+WORKDIR /src/frontend
+RUN yarn install --frozen-lockfile && \
+    yarn build --env production
+
+# Build backend
+WORKDIR /src
+RUN dotnet restore src/Readarr.sln && \
+    dotnet publish src/NzbDrone.Console/Readarr.Console.csproj \
+        -c Release \
+        -f net6.0 \
+        -r linux-musl-x64 \
+        --self-contained \
+        --no-restore \
+        -p:PublishSingleFile=false \
+        -p:PublishTrimmed=false \
+        -p:TreatWarningsAsErrors=false \
+        -o /app/readarr/bin
+
+# Copy frontend to output
+RUN mkdir -p /app/readarr/bin/UI && \
+    cp -r /src/frontend/build/* /app/readarr/bin/UI/
+
+#######################################
+# Stage 2: Runtime image
+#######################################
+FROM ghcr.io/linuxserver/baseimage-alpine:3.21
+
+# Build arguments
+ARG BUILD_DATE
+ARG VERSION
+ARG BRANCH=develop
+
+# Labels
+LABEL build_version="Readarr-JM version:- ${VERSION} Build-date:- ${BUILD_DATE}"
+LABEL maintainer="jmengit"
+
+# Environment settings
+ENV XDG_CONFIG_HOME="/config/xdg" \
+    COMPlus_EnableDiagnostics=0 \
+    TMPDIR=/run/readarr-temp
+
+# Install runtime dependencies
+RUN \
+  echo "**** install packages ****" && \
+  apk add -U --upgrade --no-cache \
+    icu-libs \
+    sqlite-libs \
+    xmlstarlet && \
+  echo "**** cleanup ****" && \
+  rm -rf \
+    /tmp/*
+
+# Copy built application from builder stage
+COPY --from=builder /app/readarr/bin /app/readarr/bin
+
+# Remove update component (not needed in Docker)
+RUN rm -rf /app/readarr/bin/Readarr.Update 2>/dev/null || true
+
+# Create package info
+RUN echo -e "UpdateMethod=docker\nBranch=${BRANCH}\nPackageVersion=${VERSION}\nPackageAuthor=[jmengit](https://github.com/jmengit)" > /app/readarr/package_info && \
+    printf "Readarr-JM version: ${VERSION}\nBuild-date: ${BUILD_DATE}" > /build_version
+
+# Copy s6-overlay service files
+COPY docker/root/ /
+
+# Expose port and define volume
+EXPOSE 8787
+VOLUME /config
