@@ -74,7 +74,9 @@ ENV XDG_CONFIG_HOME="/config/xdg" \
 RUN \
   echo "**** install packages ****" && \
   apk add -U --upgrade --no-cache \
+    curl \
     icu-libs \
+    jq \
     sqlite-libs \
     xmlstarlet && \
   echo "**** cleanup ****" && \
@@ -96,7 +98,8 @@ COPY docker/root/ /
 
 # Set execute permissions on s6 service scripts
 RUN chmod +x /etc/s6-overlay/s6-rc.d/init-readarr-config/run && \
-    chmod +x /etc/s6-overlay/s6-rc.d/svc-readarr/run
+    chmod +x /etc/s6-overlay/s6-rc.d/svc-readarr/run && \
+    chmod +x /etc/s6-overlay/s6-rc.d/svc-readarr/data/check
 
 # Expose port and define volume
 EXPOSE 8787
