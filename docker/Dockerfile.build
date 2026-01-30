@@ -23,7 +23,7 @@ WORKDIR /src/frontend
 RUN yarn install --frozen-lockfile && \
     yarn build --env production
 
-# Build backend
+# Build backend - publish main console app
 WORKDIR /src
 RUN dotnet restore src/Readarr.sln && \
     dotnet publish src/NzbDrone.Console/Readarr.Console.csproj \
@@ -36,6 +36,16 @@ RUN dotnet restore src/Readarr.sln && \
         -p:PublishTrimmed=false \
         -p:TreatWarningsAsErrors=false \
         -o /app/readarr/bin
+
+# Build and copy Mono (Linux) platform assembly
+RUN dotnet publish src/NzbDrone.Mono/Readarr.Mono.csproj \
+        -c Release \
+        -f net6.0 \
+        -r linux-musl-x64 \
+        --no-restore \
+        -p:TreatWarningsAsErrors=false \
+        -o /app/readarr/mono-temp && \
+    cp /app/readarr/mono-temp/Readarr.Mono.dll /app/readarr/bin/
 
 # Copy frontend to output
 RUN mkdir -p /app/readarr/bin/UI && \
