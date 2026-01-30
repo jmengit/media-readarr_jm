@@ -1,6 +1,9 @@
 name: Build and Push Docker Image
 
 on:
+  push:
+    tags:
+      - 'v*'
 
 env:
   REGISTRY: ghcr.io
@@ -9,19 +12,6 @@ env:
 jobs:
   build-app:
     runs-on: ubuntu-latest
-    on:
-      push:
-        tags:
-          - 'v*'
-
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
-
-    jobs:
-      build-app:
-        runs-on: ubuntu-latest
-        if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
