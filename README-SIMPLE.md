@@ -2,7 +2,70 @@
 
 This setup uses the official LinuxServer.io Readarr image with a custom book match threshold of 40% (default is 80%).
 
-## Step-by-Step Setup
+**Works with both new and existing Readarr installations!**
+
+## For Existing Readarr Installations
+
+### Option 1: Add to existing docker-compose
+
+Add this volume mount to your existing Readarr service:
+```yaml
+services:
+  readarr:
+    image: lscr.io/linuxserver/readarr:develop
+    # ... your existing config ...
+    volumes:
+      # ... your existing volumes ...
+      - /path/to/init-book-threshold.sh:/custom-cont-init.d/99-book-threshold.sh:ro
+```
+
+### Option 2: Add to existing Docker run command
+
+Add this flag to your `docker run` command:
+```bash
+-v /path/to/init-book-threshold.sh:/custom-cont-init.d/99-book-threshold.sh:ro
+```
+
+Full example:
+```bash
+docker run -d \
+  --name=readarr \
+  -e PUID=1000 \
+  -e PGID=1000 \
+  -e TZ=America/New_York \
+  -p 8787:8787 \
+  -v /path/to/config:/config \
+  -v /path/to/books:/books \
+  -v /path/to/downloads:/downloads \
+  -v /path/to/init-book-threshold.sh:/custom-cont-init.d/99-book-threshold.sh:ro \
+  --restart unless-stopped \
+  lscr.io/linuxserver/readarr:develop
+```
+
+### Steps for existing install:
+
+1. **Download the script:**
+   ```bash
+   wget https://raw.githubusercontent.com/jmengit/media-readarr_jm/develop/init-book-threshold.sh
+   chmod +x init-book-threshold.sh
+   ```
+
+2. **Restart your container** (with the new volume mount added)
+
+3. **Check the logs:**
+   ```bash
+   docker logs readarr
+   ```
+   You should see: `**** BookMatchThreshold set to 40% ****`
+
+4. **Verify it was applied:**
+   ```bash
+   docker exec readarr sqlite3 /config/readarr.db "SELECT * FROM Config WHERE Key='bookmatchthreshold';"
+   ```
+
+## For New Readarr Installations
+
+### Step-by-Step Setup
 
 ### 1. Clone or download this repository
 ```bash
@@ -28,16 +91,15 @@ THRESHOLD=40  # Change to any value between 0-100
 docker-compose up -d
 ```
 
-### 5. Complete Readarr initial setup
+### 5. Access Readarr and verify
 1. Open http://localhost:8787
-2. Complete the initial setup wizard
-3. The threshold will be set automatically
-
-### 6. Verify the setting was applied
-```bash
-docker exec readarr-jm sqlite3 /config/readarr.db "SELECT * FROM Config WHERE Key='bookmatchthreshold';"
-```
-Expected output: `bookmatchthreshold|40`
+2. If this is a fresh install, complete the setup wizard
+3. Check logs: `docker-compose logs readarr`
+4. Verify setting:
+   ```bash
+   docker exec readarr-jm sqlite3 /config/readarr.db "SELECT * FROM Config WHERE Key='bookmatchthreshold';"
+   ```
+   Expected output: `bookmatchthreshold|40`
 
 ## How It Works
 
@@ -89,21 +151,30 @@ Adjust in `docker-compose.yml`:
 ### Script not running?
 Check the container logs:
 ```bash
-docker-compose logs readarr
+docker logs readarr  # or: docker-compose logs readarr
 ```
-Look for lines like: `**** Setting BookMatchThreshold to 40% ****`
+Look for lines like: `**** BookMatchThreshold set to 40% ****`
 
-### Database not found on first start?
-This is normal. Readarr creates the database after initial setup. The script will set the threshold on the second container start.
-
-**Solution:** After completing the Readarr setup wizard, restart the container:
-```bash
-docker-compose restart
+### Already have a threshold configured?
+The script will NOT overwrite your existing setting. You'll see:
+```
+**** BookMatchThreshold already configured at XX% (not changing) ****
 ```
 
-### Want to force the script to run again?
-Delete the setting and restart:
+To force it to apply the new value:
 ```bash
-docker exec readarr-jm sqlite3 /config/readarr.db "DELETE FROM Config WHERE Key='bookmatchthreshold';"
-docker-compose restart
+docker exec readarr sqlite3 /config/readarr.db "DELETE FROM Config WHERE Key='bookmatchthreshold';"
+docker restart readarr
+```
+
+### Script says "already configured" but I don't see it in the UI?
+The setting may be set to a different value. Check the current value:
+```bash
+docker exec readarr sqlite3 /config/readarr.db "SELECT * FROM Config WHERE Key='bookmatchthreshold';"
+```
+
+### Permission denied on Linux?
+Make sure the script is executable:
+```bash
+chmod +x init-book-threshold.sh
 ```
