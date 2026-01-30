@@ -1,8 +1,9 @@
 #!/usr/bin/with-contenv bash
-# Set Book Match Threshold to 40% on container start
+# Set Book Match Threshold via BOOKMATCH_THRESHOLD environment variable (default 40%)
 
 CONFIG_DB="/config/readarr.db"
-THRESHOLD=40
+# Allow threshold to be set via environment variable, default to 40
+THRESHOLD=${BOOKMATCH_THRESHOLD:-40}
 # Set to 1 to force overwrite even if a value already exists
 OVERWRITE=${OVERWRITE_BOOKMATCH_THRESHOLD:-0}
 
